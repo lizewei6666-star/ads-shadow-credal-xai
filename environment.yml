@@ -1,0 +1,10 @@
+name: ads_shadow_credal
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+      - -r requirements.txt
+

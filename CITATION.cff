@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "Please cite the associated manuscript when using this code or its derived results."
+title: "Shadow-calibrated multi-explainer analysis of automated driving system crashes"
+type: software
+authors:
+  - family-names: Li
+    given-names: Zewei
+version: 1.0.0
+date-released: 2026-09-01
+keywords:
+  - automated driving systems
+  - crash severity
+  - explainable machine learning
+  - shadow calibration
+  - partial order
+  - partial ancestral graph
+

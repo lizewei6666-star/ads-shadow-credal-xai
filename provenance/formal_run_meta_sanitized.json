@@ -1,0 +1,248 @@
+{
+  "workflow": "credal_specification_robust_multi_explainer_inference",
+  "method_contract": {
+    "predictive_model_admission": "split-specific one-standard-error set from outer-training-only inner cross-validation using Balanced Accuracy",
+    "sources": [
+      "SHAP",
+      "PFI",
+      "LOCO",
+      "FIRM"
+    ],
+    "source_statistics": {
+      "SHAP": {
+        "table_key": "shap",
+        "value": "balanced_mean_abs_shap",
+        "direction": "upper_tail"
+      },
+      "PFI": {
+        "table_key": "pfi",
+        "value": "balanced_mean_brier_increase",
+        "direction": "upper_tail"
+      },
+      "LOCO": {
+        "table_key": "loco",
+        "value": "balanced_brier_increase",
+        "direction": "upper_tail"
+      },
+      "FIRM": {
+        "table_key": "firm",
+        "value": "balanced_firm_importance",
+        "direction": "upper_tail"
+      }
+    },
+    "source_weighting": "none",
+    "shadow_null": "raw_feature_replacement_empirical_marginal",
+    "shadow_replicates": 49,
+    "shadow_construction": "raw-feature replacement from the empirical marginal estimated on each inner-training fold; preprocessing and model parameters are refitted under a fixed predictive specification",
+    "shadow_fold_counting": "one complete inner cross-fitting run contributes one null statistic",
+    "finite_calibration": "p_tilde=(1+count(I_shadow>=I_observed))/(B+1); relevance_percentile=1-p_tilde",
+    "finite_calibration_resolution": 0.02,
+    "shap_calibration_estimator": "target-coordinate Permutation SHAP with dynamic record-level permutation counts under the complete-path reference budget",
+    "shap_display_estimator": "official full-vector permutation SHAP; descriptive display only and never mixed with target-coordinate shadow calibration",
+    "shap_permutation_plan": "model-independent common_plan_v1 keyed by phase, outer partition, inner fold, stable record ID, and cycle",
+    "relevance_scale_boundary": "operational replacement-shadow percentile; not a p-value, probability, effect size, intervention effect, or causal effect",
+    "common_support_rule": "intersection of model specifications valid for all four sources, all classes, all original features, and every shadow replicate",
+    "strict_preference_rule": "feature j strictly precedes k only when the lower expected holdout-size-weighted relevance difference is positive across every source, outer fold, and admissible model path",
+    "primary_output": "partial order, maximal set, Hasse reduction, and lower/upper expected relevance percentiles",
+    "pdp_ice_role": "descriptive probability-response profiles outside ranking inference",
+    "utility_validation": "training-only order layers are deleted cumulatively and each fixed model specification is refitted; utility is evaluated only on the corresponding outer holdout",
+    "strict_completion_policy": "empty primary common support or any incomplete fixed-path utility validation stops the run; partial evidence is not reported as a completed analysis",
+    "structural_audit_role": "independent observational FCI/PAG compatibility diagnostic; does not alter relevance ordering and supports no causal claim"
+  },
+  "data": {
+    "excel_path": "data/ads_crashes.xlsx",
+    "excel_sha256": "5d70b42898355269607df61a7ca8b2ac3255193d5cbd846fef9398a7c577c205",
+    "n_samples": 1469,
+    "expected_n_samples": 1469,
+    "feature_columns": [
+      "Incident_Month",
+      "Is_Weekend",
+      "RoadwayType_Group",
+      "RoadSurface_Group",
+      "RoadCondition_Group",
+      "Lighting_Group",
+      "Weather_Group",
+      "CrashWith_Group",
+      "CPMovement_Group",
+      "SVMovement_Group",
+      "Mileage_Group",
+      "VehicleAge_Group",
+      "PostedSpeedLimit_Group",
+      "Incident_Hour_Group"
+    ],
+    "numeric_columns": [
+      "Is_Weekend"
+    ],
+    "categorical_columns": [
+      "Incident_Month",
+      "RoadwayType_Group",
+      "RoadSurface_Group",
+      "RoadCondition_Group",
+      "Lighting_Group",
+      "Weather_Group",
+      "CrashWith_Group",
+      "CPMovement_Group",
+      "SVMovement_Group",
+      "Mileage_Group",
+      "VehicleAge_Group",
+      "PostedSpeedLimit_Group",
+      "Incident_Hour_Group"
+    ],
+    "ordered_dataset_sha256": "470bb92b0f69cc61522b1a1427da08d9e4e13f61bb78ff1f747bbef639b65670",
+    "feature_order_sha256": "e48658a1f6498204581488ec8ac487ae2c707ce6c0c7505a944bd028ced62910",
+    "stable_id_to_source_row_hash_digest": "1c179be6081abf7afbf9e3e25c21097d0ad9d68fd7930b0e0c1cec5301db77bb"
+  },
+  "partitioning": {
+    "outer_scheme": "stratified K-fold cross-fitting",
+    "outer_partitions": 5,
+    "outer_repeats": 1,
+    "outer_folds_per_repeat": 5,
+    "inner_folds": 5,
+    "outer_random_seed": 42
+  },
+  "candidate_models": [
+    "lr",
+    "rf",
+    "et",
+    "hgb",
+    "xgb",
+    "lgbm",
+    "catboost"
+  ],
+  "available_models": [
+    "lr",
+    "rf",
+    "et",
+    "hgb",
+    "xgb",
+    "lgbm",
+    "catboost"
+  ],
+  "benchmark_summary_leader": "lr",
+  "admissible_models_by_outer_partition": {
+    "1": [
+      "lr",
+      "catboost",
+      "xgb",
+      "et",
+      "lgbm",
+      "hgb"
+    ],
+    "2": [
+      "catboost",
+      "xgb",
+      "lr"
+    ],
+    "3": [
+      "xgb"
+    ],
+    "4": [
+      "catboost"
+    ],
+    "5": [
+      "lr"
+    ]
+  },
+  "execution": {
+    "run_profile": "full",
+    "resume_mode": true,
+    "resume_run_dir": "<formal-run-directory>",
+    "checkpoint_format_version": 3,
+    "statistical_contract_version": "credal_shadow_statistical_contract_v3",
+    "statistical_method_digest": "3430a741466e790e70cd403c3f6091a4b184179c4f6177743551aa294b51c904",
+    "execution_contract_version": "memory_bounded_parallel_execution_v2",
+    "execution_digest": "a7c0fa0ec5dfa4373690a3711383f380574876bcb4f49f054f29c1018f503615",
+    "script_path": "analysis/frozen_formal_predictive_source.py",
+    "script_sha256": "43483d00b1e36a0a5da520d33efd7ad0cc66c8b4bfde56b60b286f8732dc453f",
+    "tabpfn_enabled": false,
+    "tabpfn_checkpoint": null,
+    "tabpfn_checkpoint_sha256": null,
+    "force_tabpfn_cuda": false,
+    "environment": {
+      "python": "3.10.20 | packaged by conda-forge | (main, Jun 11 2026, 03:28:51) [MSC v.1944 64 bit (AMD64)]",
+      "platform": "Windows-10-10.0.26200-SP0",
+      "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+      "package_versions": {
+        "numpy": "2.2.6",
+        "pandas": "2.3.3",
+        "scikit-learn": "1.7.2",
+        "scipy": "1.15.3",
+        "shap": "0.49.1",
+        "xgboost": "3.2.0",
+        "lightgbm": "4.6.0",
+        "catboost": "1.2.10",
+        "matplotlib": "3.10.9",
+        "openpyxl": "3.1.5",
+        "causal-learn": "0.1.4.8"
+      },
+      "tabpfn_backend_enabled": false
+    }
+  },
+  "structural_compatibility_audit": {
+    "enabled": true,
+    "status": "complete",
+    "module_name": "data-driven structural compatibility audit",
+    "input_scope": "observed records in the modeled NHTSA SGO ADS crash sample; no synthetic or oversampled records",
+    "target_representation": "single nominal three-level injury outcome; structural evidence is outcome-level and is not a class-specific causal effect",
+    "algorithm": "Fast Causal Inference (FCI)",
+    "graph_output": "partial ancestral graph (PAG)",
+    "conditional_independence_test": "G-square test for discrete variables as implemented by causal-learn",
+    "alpha_grid": [
+      0.01,
+      0.05,
+      0.1
+    ],
+    "depth_grid": [
+      1,
+      2,
+      -1
+    ],
+    "max_path_length": -1,
+    "outer_partitions": 5,
+    "settings_per_partition": 9,
+    "null_replicates": 99,
+    "parallel_workers": 12,
+    "task_grouping": "one outer-partition or full-data design setting per task; matched outcome permutations remain sequential within task",
+    "task_checkpoint_contract": "parallel_fci_group_v1",
+    "negative_control": "within-partition permutation of the three-level injury labels; class counts are preserved",
+    "expert_edges_used": false,
+    "temporal_edges_forced": false,
+    "ranking_modified_by_structure": false,
+    "causal_effect_estimated": false,
+    "direction_claim_allowed": false,
+    "formal_significance_claim_allowed": false,
+    "graphical_assumptions": {
+      "causal_markov": "required for a causal interpretation of an FCI PAG; not established by this observational dataset",
+      "faithfulness": "required for a causal interpretation of an FCI PAG; not established by this observational dataset",
+      "acyclicity": "required by the graphical model used by FCI; not tested as an empirical claim",
+      "incident_level_independence": "modeled crashes are treated as independent incident-level records; overlapping outer partitions are explicitly not treated as independent replications"
+    },
+    "inferential_boundary": "PAG adjacency is reported as local structural compatibility under the observed-variable conditional-independence model. Endpoint marks are sensitivity diagnostics, not verified causal directions. No ATE, CATE, intervention response, or mechanism is inferred.",
+    "negative_control_boundary": "The permuted-outcome distribution is a descriptive finite-sample benchmark. Its quantiles and exceedance fractions are not reported as multiplicity-adjusted hypothesis tests or p-values.",
+    "dependence_boundary": "Predictive explanations and the structural audit use the same observational sample and are not statistically independent.",
+    "overlap_boundary": "Outer-training partitions overlap. Fold frequencies quantify cross-fitted stability and are not treated as independent replication probabilities or p-values.",
+    "sparsity_boundary": "G-square tests are asymptotic and conditional tables may be sparse. The category-support table and depth sensitivity are exported so weakly supported edges are not hidden behind one graph setting.",
+    "outputs": {
+      "feature_evidence": "structural_compatibility_audit/structural_compatibility_by_feature.csv",
+      "predictive_structural_matrix": "structural_compatibility_audit/predictive_structural_compatibility_matrix.csv",
+      "setting_sensitivity": "structural_compatibility_audit/structural_setting_sensitivity.csv",
+      "null_replicate_summary": "structural_compatibility_audit/structural_null_replicate_summary.csv",
+      "endpoint_patterns": "structural_compatibility_audit/structural_endpoint_pattern_summary.csv",
+      "category_support": "structural_compatibility_audit/structural_category_support_audit.csv",
+      "run_audit": "structural_compatibility_audit/structural_run_audit.csv",
+      "figures": "structural_compatibility_audit/figures"
+    }
+  },
+  "elapsed_min": 12.521395138899486,
+  "main_outputs": {
+    "admissible_model_set": "tables/admissible_model_set_by_outer_partition.csv",
+    "common_support_coverage": "tables/credal_common_support_coverage.csv",
+    "calibrated_relevance": "tables/outer_holdout_shadow_calibrated_relevance.csv",
+    "credal_partial_order": "tables/credal_feature_intervals_and_partial_order.csv",
+    "hasse_edges": "tables/credal_hasse_edges.csv",
+    "training_only_orders": "tables/training_only_partial_orders_by_outer_partition.csv",
+    "deletion_validation": "tables/training_order_deletion_validation_by_repeat.csv",
+    "figures": "figures",
+    "output_manifest": "tables/output_manifest.csv"
+  }
+}

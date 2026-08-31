@@ -1,0 +1,16 @@
+﻿outer_partition,outer_repeat,outer_fold,class_id,n_admissible_models,n_common_support_models,coverage,admissible_models,common_support_models,common_support_nonempty
+1,1,1,0,6,6,1.0,catboost|et|hgb|lgbm|lr|xgb,catboost|et|hgb|lgbm|lr|xgb,1
+1,1,1,1,6,6,1.0,catboost|et|hgb|lgbm|lr|xgb,catboost|et|hgb|lgbm|lr|xgb,1
+1,1,1,2,6,6,1.0,catboost|et|hgb|lgbm|lr|xgb,catboost|et|hgb|lgbm|lr|xgb,1
+2,1,2,0,3,3,1.0,catboost|lr|xgb,catboost|lr|xgb,1
+2,1,2,1,3,3,1.0,catboost|lr|xgb,catboost|lr|xgb,1
+2,1,2,2,3,3,1.0,catboost|lr|xgb,catboost|lr|xgb,1
+3,1,3,0,1,1,1.0,xgb,xgb,1
+3,1,3,1,1,1,1.0,xgb,xgb,1
+3,1,3,2,1,1,1.0,xgb,xgb,1
+4,1,4,0,1,1,1.0,catboost,catboost,1
+4,1,4,1,1,1,1.0,catboost,catboost,1
+4,1,4,2,1,1,1.0,catboost,catboost,1
+5,1,5,0,1,1,1.0,lr,lr,1
+5,1,5,1,1,1,1.0,lr,lr,1
+5,1,5,2,1,1,1.0,lr,lr,1
