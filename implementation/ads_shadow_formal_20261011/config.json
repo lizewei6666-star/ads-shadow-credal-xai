@@ -1,0 +1,20 @@
+{
+  "version": "ads_matched_shadow_application_v1",
+  "outer_partitions": [1, 2, 3, 4, 5],
+  "record_repeats": 12,
+  "primary_support": 10,
+  "sensitivity_support": [8, 12],
+  "policies": ["fixed", "cv"],
+  "arms": ["plain", "double"],
+  "models": ["lr", "rf", "et", "hgb", "xgb", "lgbm", "catboost"],
+  "inner_folds": 5,
+  "source_budget": {"background": 120, "shap_cycles": 5, "pfi_repeats": 30},
+  "prediction_batch_rows": 4096,
+  "primary_policy": "cv",
+  "primary_method": "Joint4",
+  "primary_gate": "shadow",
+  "model_pooling": "within_source_coordinate_median",
+  "partition_pooling": "external_size_weighted_source_profiles",
+  "bootstrap_admission": "fixed_original_set",
+  "preflight": {"partition": 1, "model": "lr", "policy": "cv", "repeat": 0}
+}
