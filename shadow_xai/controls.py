@@ -1,33 +1,26 @@
-"""Training-marginal controls and size-independent relation decisions."""
-from __future__ import annotations
+"""Fitting-set shadow controls, paired orientations, and resampling roles."""
 
+from __future__ import annotations
 from contextlib import contextmanager
 import hashlib
 from itertools import combinations
-import os
-from pathlib import Path
-import sys
-
-for name in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
-    os.environ[name] = "1"
-
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold
 
-ROOT = Path(__file__).resolve().parent
-WORK = ROOT.parent
-sys.path.insert(0, str(WORK / "ads-shadow-credal-xai"))
-from validation.core_adapter import get_core
-
 MODELS = ("lr", "rf", "et", "hgb", "xgb", "lgbm", "catboost")
 SOURCES = ("SHAP", "PFI", "LOCO", "FIRM")
 EPS = 1e-12
-WORKBOOK = WORK / "ads-shadow-credal-xai_staging/core/ads+final_new.xlsx"
-WORKBOOK_SHA = "5d70b42898355269607df61a7ca8b2ac3255193d5cbd846fef9398a7c577c205"
+
+
+def get_core():
+    from . import numerics
+
+    return numerics
 
 
 def seed(*parts):
+    # Seed labels are fixed so module renaming does not change random draws.
     text = "|".join(map(str, parts)).encode("utf-8")
     return int(hashlib.sha256(text).hexdigest()[:8], 16) % (2**31 - 1)
 
@@ -57,7 +50,9 @@ def split_roles(folds, y, partition, repeat=0):
                 blocks.append(rng.choice(selected, len(selected), replace=True))
             draw = np.concatenate(blocks)
             np.random.default_rng(seed("ads_bootstrap_shuffle_v1", repeat, f)).shuffle(draw)
-        np.testing.assert_array_equal(np.bincount(y[draw], minlength=3), np.bincount(y[ids], minlength=3))
+        np.testing.assert_array_equal(
+            np.bincount(y[draw], minlength=3), np.bincount(y[ids], minlength=3)
+        )
         draws.append(draw)
     cal = (partition + 1) % len(folds)
     fit = np.concatenate([draw for f, draw in enumerate(draws) if f not in (partition, cal)])
@@ -90,8 +85,12 @@ def augment(raw, schema, fit_ids, partition, repeat=0):
             donor = np.random.default_rng(s).choice(fit_ids, len(raw), replace=True)
             result[name] = raw.iloc[donor][feature].to_numpy(copy=True)
             provenance[name] = dict(parent=feature, seed=s, donor_ids=donor)
-    numerical = list(schema.numeric_cols) + [z for f in features if f in schema.numeric_cols for z in names[f]]
-    categorical = list(schema.categorical_cols) + [z for f in features if f in schema.categorical_cols for z in names[f]]
+    numerical = list(schema.numeric_cols) + [
+        z for f in features if f in schema.numeric_cols for z in names[f]
+    ]
+    categorical = list(schema.categorical_cols) + [
+        z for f in features if f in schema.categorical_cols for z in names[f]
+    ]
     new_schema = core.FeatureSchema(features + controls, numerical, categorical)
     pd.testing.assert_frame_equal(result[raw.columns], raw)
     return result, new_schema, provenance
@@ -116,8 +115,10 @@ def aligned_names(features, schema, orientation):
 
 
 def control_positions(features, columns):
-    return np.array([[columns.index(name) for name in pair]
-                     for pair in control_names(features).values()], dtype=int)
+    return np.array(
+        [[columns.index(name) for name in pair] for pair in control_names(features).values()],
+        dtype=int,
+    )
 
 
 def votes(center, p, controls, gate="shadow"):
@@ -158,10 +159,15 @@ def joint_graphs(source_votes):
 @contextmanager
 def preflight_core():
     core = get_core()
-    changes = dict(MODEL_N_JOBS=1, SHAP_BACKGROUND_SIZE=12, SHAP_PERMUTATION_CYCLES=1,
-                   PERMUTATION_REPEATS=3, TARGET_SHAP_PREDICTION_BATCH_ROWS=4096,
-                   ENABLE_TARGET_SHAP_EQUIVALENCE_AUDIT=False,
-                   ENABLE_TARGET_SHAP_PLAN_SENSITIVITY_AUDIT=False)
+    changes = dict(
+        MODEL_N_JOBS=1,
+        SHAP_BACKGROUND_SIZE=12,
+        SHAP_PERMUTATION_CYCLES=1,
+        PERMUTATION_REPEATS=3,
+        TARGET_SHAP_PREDICTION_BATCH_ROWS=4096,
+        ENABLE_TARGET_SHAP_EQUIVALENCE_AUDIT=False,
+        ENABLE_TARGET_SHAP_PLAN_SENSITIVITY_AUDIT=False,
+    )
     previous = {name: getattr(core, name) for name in changes}
     try:
         for name, value in changes.items():

@@ -1,4 +1,5 @@
 """Reconstruct directional decisions from stored source profiles."""
+
 from pathlib import Path
 import json
 
@@ -18,9 +19,9 @@ def graph_for(center, p, gate, method):
     scores = center[..., :p]
     direction = scores[..., :, None] - scores[..., None, :] > EPS
     if gate == "shadow":
-        if center.shape[-1] != 3*p:
+        if center.shape[-1] != 3 * p:
             raise ValueError("Each original feature requires two matched controls")
-        controls = np.arange(p, 3*p).reshape(p, 2)
+        controls = np.arange(p, 3 * p).reshape(p, 2)
         qualified = (scores[..., :, None] - center[..., controls] > EPS).all(axis=-1)
     elif gate == "zero":
         qualified = scores > EPS
@@ -50,7 +51,7 @@ def grade(graph, scores):
     truth = (delta > 1e-10).all(axis=0)
     correct = int((graph & truth).sum())
     wrong = int((graph & ~truth).sum())
-    return dict(correct=correct, wrong=wrong, declared=correct+wrong, true_total=int(truth.sum()))
+    return dict(correct=correct, wrong=wrong, declared=correct + wrong, true_total=int(truth.sum()))
 
 
 def ratios(frame):
@@ -60,12 +61,21 @@ def ratios(frame):
     return frame
 
 
-def summarize(profile_path, output, domain, references=None, schema=None,
-              archived_graphs=None, archived_counts=None):
+def summarize(
+    profile_path,
+    output,
+    domain,
+    references=None,
+    schema=None,
+    archived_graphs=None,
+    archived_counts=None,
+):
     """Rebuild every comparator and tier, optionally checking archived decisions."""
     output = Path(output)
     output.mkdir(parents=True, exist_ok=True)
-    features = [f"X{i}" for i in range(1, 11)] if domain == "simulation" else schema["feature_columns"]
+    features = (
+        [f"X{i}" for i in range(1, 11)] if domain == "simulation" else schema["feature_columns"]
+    )
     p = len(features)
     old_graphs = np.load(archived_graphs, allow_pickle=False) if archived_graphs else None
     old_counts = np.load(archived_counts, allow_pickle=False) if archived_counts else None
@@ -86,26 +96,47 @@ def summarize(profile_path, output, domain, references=None, schema=None,
                             np.testing.assert_array_equal(graph, old_graphs[name], err_msg=name)
                             np.testing.assert_array_equal(counts, old_counts[name], err_msg=name)
                             checked += 1
-                        meta = dict(case=case, arm=arm, policy=policy, scope=scope, gate=gate, method=method)
+                        meta = dict(
+                            case=case, arm=arm, policy=policy, scope=scope, gate=gate, method=method
+                        )
                         if domain == "simulation":
                             meta["scenario"] = case.split("-", 1)[1]
                         for c in range(3):
                             for k, g in enumerate(graph):
-                                record = dict(**meta, class_id=c, support=k, declared=int(g[c].sum()))
+                                record = dict(
+                                    **meta, class_id=c, support=k, declared=int(g[c].sum())
+                                )
                                 if refs is not None:
                                     record.update(grade(g[c], refs[case][:, c]))
                                 summaries.append(record)
                             for tier, lo, hi in (("high", 8, 12), ("medium", 4, 7), ("low", 0, 3)):
                                 mask = graph[0, c] & (counts[c] >= lo) & (counts[c] <= hi)
-                                record = dict(**meta, class_id=c, tier=tier, declared=int(mask.sum()))
+                                record = dict(
+                                    **meta, class_id=c, tier=tier, declared=int(mask.sum())
+                                )
                                 if refs is not None:
                                     record.update(grade(mask, refs[case][:, c]))
                                 tiers.append(record)
-                            if scope == "admitted_pool" and policy == "cv" and gate == "shadow" and method == "Joint4":
+                            if (
+                                scope == "admitted_pool"
+                                and policy == "cv"
+                                and gate == "shadow"
+                                and method == "Joint4"
+                            ):
                                 for j, h in np.argwhere(graph[0, c]):
                                     k = int(counts[c, j, h])
-                                    relations.append(dict(**meta, class_id=c, leader=features[j], follower=features[h],
-                                                          support=k, tier="high" if k >= 8 else "medium" if k >= 4 else "low"))
+                                    relations.append(
+                                        dict(
+                                            **meta,
+                                            class_id=c,
+                                            leader=features[j],
+                                            follower=features[h],
+                                            support=k,
+                                            tier=(
+                                                "high" if k >= 8 else "medium" if k >= 4 else "low"
+                                            ),
+                                        )
+                                    )
         frame, tier_frame = pd.DataFrame(summaries), pd.DataFrame(tiers)
         frame.to_csv(output / "comparisons_by_class.csv", index=False)
         tier_frame.to_csv(output / "tiers_by_class.csv", index=False)
@@ -113,14 +144,29 @@ def summarize(profile_path, output, domain, references=None, schema=None,
         if refs is not None:
             metrics = ["correct", "wrong", "declared", "true_total"]
             dims = ["arm", "policy", "scope", "gate", "method"]
-            for label, table, tail in (("comparisons", frame, "support"), ("tiers", tier_frame, "tier")):
+            for label, table, tail in (
+                ("comparisons", frame, "support"),
+                ("tiers", tier_frame, "tier"),
+            ):
                 for suffix, groups in (("pooled", []), ("by_scenario", ["scenario"])):
-                    table_out = ratios(table.groupby(groups+dims+[tail], dropna=False)[metrics].sum().reset_index())
+                    table_out = ratios(
+                        table.groupby(groups + dims + [tail], dropna=False)[metrics]
+                        .sum()
+                        .reset_index()
+                    )
                     table_out.to_csv(output / f"{label}_{suffix}.csv", index=False)
-        manifest = dict(domain=domain, profiles=str(Path(profile_path).name), decision_arrays_checked=checked,
-                        primary_support=8, tiers={"high": [8, 12], "medium": [4, 7], "low": [0, 3]},
-                        zero_declarations_precision=None, null_recovery=None)
-        (output / "reproduction.json").write_text(json.dumps(manifest, indent=2)+"\n", encoding="utf-8")
+        manifest = dict(
+            domain=domain,
+            profiles=str(Path(profile_path).name),
+            decision_arrays_checked=checked,
+            primary_support=8,
+            tiers={"high": [8, 12], "medium": [4, 7], "low": [0, 3]},
+            zero_declarations_precision=None,
+            null_recovery=None,
+        )
+        (output / "reproduction.json").write_text(
+            json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
+        )
         return manifest
     finally:
         for value in (old_graphs, old_counts, refs):

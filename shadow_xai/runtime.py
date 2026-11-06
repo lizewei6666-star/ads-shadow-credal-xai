@@ -1,8 +1,8 @@
-"""Portable execution of the manuscript's frozen numerical workers."""
+"""Run configuration, checkpoints, and simulation orchestration."""
+
 from contextlib import contextmanager
 from functools import lru_cache
 import hashlib
-import importlib
 import importlib.metadata
 import json
 import os
@@ -11,9 +11,13 @@ import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-IMPLEMENTATION = ROOT / "implementation"
 STATE = {}
-THREAD_VARIABLES = ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "NUMEXPR_NUM_THREADS")
+THREAD_VARIABLES = (
+    "OMP_NUM_THREADS",
+    "MKL_NUM_THREADS",
+    "OPENBLAS_NUM_THREADS",
+    "NUMEXPR_NUM_THREADS",
+)
 
 
 def sha(path):
@@ -28,7 +32,7 @@ def write(path, value):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")
-    temporary.write_text(json.dumps(value, indent=2, allow_nan=False)+"\n", encoding="utf-8")
+    temporary.write_text(json.dumps(value, indent=2, allow_nan=False) + "\n", encoding="utf-8")
     temporary.replace(path)
 
 
@@ -49,11 +53,9 @@ def check_environment():
 def modules():
     for name in THREAD_VARIABLES:
         os.environ[name] = "1"
-    for path in (IMPLEMENTATION, IMPLEMENTATION / "ads-shadow-credal-xai",
-                 IMPLEMENTATION / "ads_shadow_formal_20261011"):
-        sys.path.insert(0, str(path))
-    runtime = importlib.import_module("runtime")
-    support = importlib.import_module("support")
+    from . import ads as runtime
+    from . import sampling as support
+
     return runtime, support
 
 
@@ -68,7 +70,7 @@ def progress(phase, **details):
     value = dict(phase=phase, time=time.strftime("%Y-%m-%d %H:%M:%S"), **details)
     write(STATE["out"] / "progress.json", value)
     with (STATE["out"] / "progress.jsonl").open("a", encoding="utf-8") as stream:
-        stream.write(json.dumps(value)+"\n")
+        stream.write(json.dumps(value) + "\n")
     print(json.dumps(value), flush=True)
 
 
@@ -91,17 +93,23 @@ def simulation_tuning(core, raw, y, schema, fit, arm, repeat, case):
 
 def ads_data(core):
     import numpy as np
+
     expected = read(ROOT / "configs/ads_schema.json")
     path = Path(STATE["data"])
     if sha(path) != expected["workbook_sha256"]:
-        raise ValueError("Workbook differs from the manuscript input; use the original private workbook")
+        raise ValueError(
+            "Workbook differs from the manuscript input; use the original private workbook"
+        )
     frame = core.load_ads_table(str(path), use_hour_group=True)
     schema = core.get_feature_schema(frame)
     raw, y = core.split_xy(frame, schema)
     assert len(raw) == expected["n_records"]
     assert np.bincount(y, minlength=3).tolist() == expected["class_counts"]
-    for attr, key in (("feature_cols", "feature_columns"), ("numeric_cols", "numeric_columns"),
-                      ("categorical_cols", "categorical_columns")):
+    for attr, key in (
+        ("feature_cols", "feature_columns"),
+        ("numeric_cols", "numeric_columns"),
+        ("categorical_cols", "categorical_columns"),
+    ):
         assert list(getattr(schema, attr)) == expected[key]
     assert not raw[schema.feature_cols].isna().any().any()
     assert all(raw[f].map(lambda x: isinstance(x, str)).all() for f in schema.categorical_cols)
@@ -113,16 +121,33 @@ def configure(kind, out, data=None):
     out = Path(out).resolve()
     config = read(ROOT / "configs" / f"{kind}.json")
     if config["record_repeats"] != 12 or config["primary_support"] != 8:
-        raise ValueError("The manuscript reporting protocol requires 12 resamples and primary support 8")
+        raise ValueError(
+            "The manuscript reporting protocol requires 12 resamples and primary support 8"
+        )
     if kind == "simulation":
         expected_budget = dict(background=12, shap_cycles=1, pfi_repeats=3)
-        if (config["n_samples"], config["n_features"], config["source_budget"]) != (1500, 10, expected_budget):
-            raise ValueError("The frozen simulation requires 1500 records, 10 features, and the published source budget")
-    sources = {str(p.relative_to(ROOT)).replace("\\", "/"): sha(p)
-               for folder in ("implementation", "shadow_xai") for p in sorted((ROOT/folder).rglob("*.py"))}
-    body = dict(kind=kind, config=config, sources=sources,
-                versions={line.split("==")[0]: line.split("==")[1]
-                          for line in (ROOT/"requirements.txt").read_text().splitlines() if "==" in line})
+        if (config["n_samples"], config["n_features"], config["source_budget"]) != (
+            1500,
+            10,
+            expected_budget,
+        ):
+            raise ValueError(
+                "The frozen simulation requires 1500 records, 10 features, and the published source budget"
+            )
+    sources = {
+        str(p.relative_to(ROOT)).replace("\\", "/"): sha(p)
+        for p in sorted((ROOT / "shadow_xai").rglob("*.py"))
+    }
+    body = dict(
+        kind=kind,
+        config=config,
+        sources=sources,
+        versions={
+            line.split("==")[0]: line.split("==")[1]
+            for line in (ROOT / "requirements.txt").read_text().splitlines()
+            if "==" in line
+        },
+    )
     if kind == "ads":
         if data is None or not Path(data).is_file():
             raise FileNotFoundError("Supply --data with the private ADS workbook path")
@@ -171,9 +196,11 @@ def run_lock(folder):
         try:
             if os.name == "nt":
                 import msvcrt
+
                 msvcrt.locking(stream.fileno(), msvcrt.LK_NBLCK, 1)
             else:
                 import fcntl
+
                 fcntl.flock(stream, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except OSError as exc:
             raise RuntimeError("Another process is using this output directory") from exc
@@ -189,8 +216,9 @@ def run_lock(folder):
 
 def simulation_bindings():
     _, support = modules()
-    return support.bindings(verify, progress, out=STATE["out"],
-                            point=STATE["out"] / "admission", generator=fresh)
+    return support.bindings(
+        verify, progress, out=STATE["out"], point=STATE["out"] / "admission", generator=fresh
+    )
 
 
 def simulation_folder(task):
@@ -216,7 +244,11 @@ def simulation_profile(task):
 def checked_unit(task):
     case, model, arm, policy, repeat = task
     folder = simulation_folder(task)
-    name = "complete.json" if model == "lr" or repeat else f"{'augmented' if arm == 'double' else arm}_{model}.json"
+    name = (
+        "complete.json"
+        if model == "lr" or repeat
+        else f"{'augmented' if arm == 'double' else arm}_{model}.json"
+    )
     path = folder / name
     if not path.exists():
         return None
@@ -236,7 +268,9 @@ def compute_simulation(task):
         return dict(task=task, cached=True)
     case, model, arm, policy, repeat = task
     if model == "lr":
-        worker = support.bind(runtime.repair.compute_unit, roles_for=simulation_roles, tune=simulation_tuning)
+        worker = support.bind(
+            runtime.repair.compute_unit, roles_for=simulation_roles, tune=simulation_tuning
+        )
         record = worker(case, arm, policy, repeat, simulation_folder(task))
         record["identity"] = verify()
         write(simulation_folder(task) / "complete.json", record)
@@ -268,12 +302,14 @@ def tasks():
     if STATE["kind"] == "ads":
         return runtime.all_tasks()
     cfg = STATE["config"]
-    return [(case, model, arm, policy, repeat)
-            for case in cfg["cases"]
-            for model in read(STATE["out"] / "admission" / case / "prepared.json")["admitted"]
-            for arm in cfg["arms"]
-            for policy in (cfg["policies"] if model == "lr" else ["shared"])
-            for repeat in range(cfg["record_repeats"]+1)]
+    return [
+        (case, model, arm, policy, repeat)
+        for case in cfg["cases"]
+        for model in read(STATE["out"] / "admission" / case / "prepared.json")["admitted"]
+        for arm in cfg["arms"]
+        for policy in (cfg["policies"] if model == "lr" else ["shared"])
+        for repeat in range(cfg["record_repeats"] + 1)
+    ]
 
 
 def worker(payload):
@@ -286,13 +322,20 @@ def evaluate_simulation():
     import numpy as np
     import pandas as pd
     from .evidence import summarize
+
     _, support = modules()
     cfg, out = STATE["config"], STATE["out"]
     profiles, references, scopes = {}, {}, {}
     for case in cfg["cases"]:
         models = read(out / "admission" / case / "prepared.json")["admitted"]
-        best = str(pd.read_pickle(out / "admission" / case / "selection.pkl").one_se_reference_model.iloc[0])
-        members = dict(admitted_pool=models, best_learner=[best], **{f"learner_{m}": [m] for m in models})
+        best = str(
+            pd.read_pickle(out / "admission" / case / "selection.pkl").one_se_reference_model.iloc[
+                0
+            ]
+        )
+        members = dict(
+            admitted_pool=models, best_learner=[best], **{f"learner_{m}": [m] for m in models}
+        )
         if len(models) > 1:
             members.update({f"without_{m}": [n for n in models if n != m] for m in models})
         scopes[case] = members
@@ -301,7 +344,7 @@ def evaluate_simulation():
                 values = {}
                 for m in models:
                     records = []
-                    for repeat in range(cfg["record_repeats"]+1):
+                    for repeat in range(cfg["record_repeats"] + 1):
                         task = (case, m, arm, policy if m == "lr" else "shared", repeat)
                         if checked_unit(task) is None:
                             raise ValueError(f"Missing unit: {task}")
@@ -309,11 +352,17 @@ def evaluate_simulation():
                             records.append(stored["mean"].copy())
                     values[m] = np.stack(records)
                 for scope, subset in members.items():
-                    profiles[f"{case}__{'augmented' if arm == 'double' else arm}__{policy}__{scope}"] = np.median([values[m] for m in subset], axis=0)
+                    profiles[
+                        f"{case}__{'augmented' if arm == 'double' else arm}__{policy}__{scope}"
+                    ] = np.median([values[m] for m in subset], axis=0)
         _, y, _ = fresh(case)
         fit = read(out / "admission" / case / "roles.json")["fit"]
-        references[case] = support.design.population_scores(case.split("-", 1)[1], np.bincount(y[fit], minlength=3)/len(fit))
+        references[case] = support.design.population_scores(
+            case.split("-", 1)[1], np.bincount(y[fit], minlength=3) / len(fit)
+        )
     np.savez_compressed(out / "profiles.npz", **profiles)
     np.savez_compressed(out / "references.npz", **references)
     write(out / "pooling_scopes.json", scopes)
-    return summarize(out / "profiles.npz", out / "tables", "simulation", references=out / "references.npz")
+    return summarize(
+        out / "profiles.npz", out / "tables", "simulation", references=out / "references.npz"
+    )

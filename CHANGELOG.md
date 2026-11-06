@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Moved the current analysis into `shadow_xai`, removing historical experiment directories and unused analysis entry points.
+- Added tests for shadow sampling, resampling roles, tuning splits, and population targets.
+- Kept the current study's comparator analyses and command-line interface.
+
 ## 2.0.0
 
 - Added matched-shadow relevance qualification, joint directional comparisons, and bootstrap recurrence tiers.
