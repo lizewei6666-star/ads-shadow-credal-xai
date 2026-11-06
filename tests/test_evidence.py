@@ -15,7 +15,7 @@ class DirectionTests(unittest.TestCase):
 
     def test_both_roles_required(self):
         values = self.center()
-        values[:, 1, :, :, 0] = .5
+        values[:, 1, :, :, 0] = 0.5
         self.assertFalse(graph_for(values, 2, "shadow", "Joint4")[0].any())
 
     def test_both_shadows_required(self):
@@ -46,12 +46,12 @@ class DirectionTests(unittest.TestCase):
 
     def test_original_candidate_and_support_threshold(self):
         values = self.center()
-        values[9:, ..., 0] = .5
+        values[9:, ..., 0] = 0.5
         graphs, counts, _ = graph_for(values, 2, "shadow", "Joint4")
         self.assertTrue(graphs[8, :, 0, 1].all())
         self.assertFalse(graphs[9, :, 0, 1].any())
         self.assertTrue((counts[:, 0, 1] == 8).all())
-        values[0, ..., 0] = .5
+        values[0, ..., 0] = 0.5
         self.assertFalse(graph_for(values, 2, "shadow", "Joint4")[0][:, :, 0, 1].any())
 
     def test_invalid_input(self):
@@ -61,7 +61,7 @@ class DirectionTests(unittest.TestCase):
             graph_for(values, 2, "shadow", "Joint4")
 
     def test_reference_ties_are_not_correct_directions(self):
-        scores = np.array([[2., 1., 1.]]*4)
+        scores = np.array([[2.0, 1.0, 1.0]] * 4)
         graph = np.array([[False, True, False], [False, False, True], [True, False, False]])
         result = grade(graph, scores)
         self.assertEqual(result, dict(correct=1, wrong=2, declared=3, true_total=2))

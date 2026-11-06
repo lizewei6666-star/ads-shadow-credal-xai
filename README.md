@@ -41,13 +41,18 @@ python launch.py summarize --dataset simulation --input outputs/simulation --out
 
 ## Organization
 
-- `shadow_xai/`: execution, evidence integration, and table export.
-- `implementation/`: numerical workers retained from the manuscript experiments.
+- `shadow_xai/numerics.py`: learner fitting and four explanation statistics.
+- `shadow_xai/controls.py`: matched shadows and resampling roles.
+- `shadow_xai/population.py`: simulation mechanisms and reference targets.
+- `shadow_xai/evidence.py`: source integration, recurrence tiers, and table export.
+- `shadow_xai/runtime.py`: execution and checkpoint management.
 - `configs/`: analysis settings and input schema.
 - `tests/`: decision and execution checks using synthetic test inputs.
-- `provenance/`: source-file checksums.
+- `provenance/`: distribution file checksums.
 
-Run analyses through `launch.py`. Internal historical module names are retained for compatibility. [Method details](docs/method.md) describe the analysis settings and directional decision rules.
+Run analyses through `launch.py`. [Method details](docs/method.md) describe the analysis settings and directional decision rules. Plain fits, single-source decisions, and fixed-penalty fits are retained as comparators for the current study.
+
+Checkpoints are tied to the code and settings that produced them. Use a new output directory when changing code versions. Previously completed profiles can still be passed to `summarize` without refitting.
 
 ## Citation and Permissions
 
