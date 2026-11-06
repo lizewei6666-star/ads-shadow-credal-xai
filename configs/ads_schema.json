@@ -1,0 +1,43 @@
+{
+  "feature_columns": [
+    "Incident_Month",
+    "Is_Weekend",
+    "RoadwayType_Group",
+    "RoadSurface_Group",
+    "RoadCondition_Group",
+    "Lighting_Group",
+    "Weather_Group",
+    "CrashWith_Group",
+    "CPMovement_Group",
+    "SVMovement_Group",
+    "Mileage_Group",
+    "VehicleAge_Group",
+    "PostedSpeedLimit_Group",
+    "Incident_Hour_Group"
+  ],
+  "numeric_columns": [
+    "Is_Weekend"
+  ],
+  "categorical_columns": [
+    "Incident_Month",
+    "RoadwayType_Group",
+    "RoadSurface_Group",
+    "RoadCondition_Group",
+    "Lighting_Group",
+    "Weather_Group",
+    "CrashWith_Group",
+    "CPMovement_Group",
+    "SVMovement_Group",
+    "Mileage_Group",
+    "VehicleAge_Group",
+    "PostedSpeedLimit_Group",
+    "Incident_Hour_Group"
+  ],
+  "n_records": 1469,
+  "class_counts": [
+    1328,
+    109,
+    32
+  ],
+  "workbook_sha256": "5d70b42898355269607df61a7ca8b2ac3255193d5cbd846fef9398a7c577c205"
+}

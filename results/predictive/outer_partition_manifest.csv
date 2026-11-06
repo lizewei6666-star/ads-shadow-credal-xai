@@ -1,6 +1,0 @@
-﻿outer_partition,outer_repeat,outer_fold,split_seed,n_train,n_holdout,n_train_class_0,n_holdout_class_0,n_train_class_1,n_holdout_class_1,n_train_class_2,n_holdout_class_2
-1,1,1,201740942,1175,294,1062,266,87,22,26,6
-2,1,2,688157573,1175,294,1062,266,87,22,26,6
-3,1,3,256911525,1175,294,1062,266,88,21,25,7
-4,1,4,2034886092,1175,294,1063,265,87,22,25,7
-5,1,5,1921882578,1176,293,1063,265,87,22,26,6

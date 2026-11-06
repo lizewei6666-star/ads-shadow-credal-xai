@@ -1,17 +1,16 @@
 cff-version: 1.2.0
-message: "Please cite the associated manuscript when using this code or its derived results."
-title: "Shadow-calibrated multi-explainer analysis of automated driving system crashes"
+message: "Please cite this software and the associated manuscript when using the implementation."
+title: "Matched-shadow qualification for joint feature priorities"
 type: software
 authors:
   - family-names: Li
     given-names: Zewei
-version: 1.0.0
-date-released: 2026-09-01
+version: 2.0.0
+repository-code: "https://github.com/lizewei6666-star/ads-shadow-credal-xai"
 keywords:
   - automated driving systems
-  - crash severity
+  - crash injury severity
   - explainable machine learning
-  - shadow calibration
-  - partial order
-  - partial ancestral graph
-
+  - matched shadow features
+  - joint feature priorities
+  - resampling recurrence

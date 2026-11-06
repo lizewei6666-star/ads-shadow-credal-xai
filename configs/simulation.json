@@ -1,0 +1,14 @@
+{
+  "cases": [
+    "2026101003-additive", "2026101003-rare_interaction", "2026101003-null",
+    "2026101004-additive", "2026101004-rare_interaction", "2026101004-null",
+    "2026101005-additive", "2026101005-rare_interaction", "2026101005-null"
+  ],
+  "arms": ["plain", "double"],
+  "policies": ["fixed", "cv"],
+  "record_repeats": 12,
+  "primary_support": 8,
+  "n_samples": 1500,
+  "n_features": 10,
+  "source_budget": {"background": 12, "shap_cycles": 1, "pfi_repeats": 3}
+}
